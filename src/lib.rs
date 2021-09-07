@@ -3,6 +3,8 @@
 
 #![no_std]
 
+extern crate alloc;
+
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
@@ -28,6 +30,24 @@ impl<T> DsuRoot<T> {
         }
     }
 
+    /// Determine whether the two `DsuRoot` smart pointers refer to the same tree.
+    ///
+    /// ```
+    /// use dsu_tree::DsuRoot;
+    ///
+    /// let mut dsu_1 = DsuRoot::new(10);
+    /// let mut dsu_2 = DsuRoot::new(20);
+    /// assert!(!DsuRoot::same(&mut dsu_1, &mut dsu_2));
+    ///
+    /// dsu_1.merge_into(&mut dsu_2);
+    /// assert!(DsuRoot::same(&mut dsu_1, &mut dsu_2));
+    /// ```
+    pub fn same(lhs: &mut Self, rhs: &mut Self) -> bool {
+        lhs.move_to_root();
+        rhs.move_to_root();
+        Rc::ptr_eq(&lhs.node, &rhs.node)
+    }
+
     /// Get the value contained in the DSU tree node pointed to by this `DsuRoot` smart pointer.
     ///
     /// This function requires `&mut self` since the `DsuRoot` smart pointer may move around over
@@ -44,8 +64,8 @@ impl<T> DsuRoot<T> {
     /// If initially, the two trees are the same tree, then this function does nothing. Otherwise,
     /// the parent node of the root node of the tree specified through `self` is set to the root
     /// node of the tree specified through `another`.
-    pub fn merge_into(&mut self, another: &mut DsuRoot<T>) {
-        if self.same(another) {
+    pub fn merge_into(&mut self, another: &mut Self) {
+        if Self::same(self, another) {
             return;
         }
 
@@ -55,22 +75,6 @@ impl<T> DsuRoot<T> {
         debug_assert!(another.node.is_root());
 
         self.node.set_parent(another.node.clone())
-    }
-
-    /// Determine whether the two `DsuRoot` smart pointers refer to the same tree.
-    ///
-    /// ```
-    /// let mut dsu_1 = dsu_tree::DsuRoot::new(10);
-    /// let mut dsu_2 = dsu_tree::DsuRoot::new(20);
-    /// assert!(!dsu_1.same(&mut dsu_2));
-    ///
-    /// dsu_1.merge_into(&mut dsu_2);
-    /// assert!(dsu_1.same(&mut dsu_2));
-    /// ```
-    pub fn same(&mut self, another: &mut DsuRoot<T>) -> bool {
-        self.move_to_root();
-        another.move_to_root();
-        self.node.ptr_eq(&another.node)
     }
 
     /// Move this smart pointer to make it point to the root node of the referring DSU tree.
@@ -118,7 +122,7 @@ impl<T> DsuNode<T> {
     /// Set the parent node.
     //noinspection ALL
     fn set_parent(&self, parent: Rc<DsuNode<T>>) {
-        *self.parent.borrow() = Some(parent);
+        *self.parent.borrow_mut() = Some(parent);
     }
 
     /// Compress the path from this node to the root node of the tree.
@@ -140,7 +144,7 @@ impl<T> DsuNode<T> {
             match &*parent_borrow {
                 Some(parent) => parent.is_root(),
                 None => true,
-            };
+            }
         };
         if trivial {
             return;
@@ -152,7 +156,7 @@ impl<T> DsuNode<T> {
         // First, compress the path from the parent to the root. After this step, the parent of the
         // parent node should be the root.
         let parent_node = parent_borrow.as_ref().unwrap();
-        parent_borrow.compress_path();
+        parent_node.compress_path();
 
         // Then, simply update the parent pointer.
         *parent_borrow = Some(parent_node.parent().unwrap());
@@ -161,8 +165,109 @@ impl<T> DsuNode<T> {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    use super::*;
+
+    mod dsu_node_tests {
+        use super::*;
+        use alloc::vec::Vec;
+
+        #[test]
+        fn test_new() {
+            let node = DsuNode::new(10);
+
+            assert!(node.parent.borrow().is_none());
+            assert_eq!(node.value, 10);
+        }
+
+        #[test]
+        fn test_is_root_true() {
+            let node = DsuNode::new(10);
+            assert!(node.is_root());
+        }
+
+        #[test]
+        fn test_is_root_false() {
+            let mut node = DsuNode::new(10);
+            node.parent = RefCell::new(Some(Rc::new(DsuNode::new(20))));
+
+            assert!(!node.is_root());
+        }
+
+        #[test]
+        fn test_parent_root() {
+            let node = DsuNode::new(10);
+
+            assert!(node.parent().is_none());
+        }
+
+        #[test]
+        fn test_parent_non_root() {
+            let mut node = DsuNode::new(10);
+            let root = Rc::new(DsuNode::new(20));
+            node.parent = RefCell::new(Some(root.clone()));
+
+            let node_parent = node.parent();
+            assert!(node_parent.is_some());
+            assert!(Rc::ptr_eq(node_parent.as_ref().unwrap(), &root));
+        }
+
+        #[test]
+        fn test_set_parent() {
+            let node = DsuNode::new(10);
+            let parent = Rc::new(DsuNode::new(20));
+
+            node.set_parent(parent.clone());
+
+            assert!(node.parent.borrow().is_some());
+            assert!(Rc::ptr_eq(node.parent.borrow().as_ref().unwrap(), &parent));
+        }
+
+        #[test]
+        fn test_compress_path_root() {
+            let node = DsuNode::new(10);
+
+            node.compress_path();
+
+            assert!(node.parent.borrow().is_none());
+        }
+
+        #[test]
+        fn test_compress_path_root_child() {
+            let mut node = DsuNode::new(10);
+            let root = Rc::new(DsuNode::new(20));
+            node.parent = RefCell::new(Some(root.clone()));
+
+            node.compress_path();
+
+            assert!(node.parent.borrow().is_some());
+            assert!(Rc::ptr_eq(node.parent.borrow().as_ref().unwrap(), &root));
+        }
+
+        #[test]
+        fn test_compress_path_deep() {
+            let mut nodes = Vec::with_capacity(10);
+
+            let root = Rc::new(DsuNode::new(0));
+            nodes.push(root.clone());
+
+            for i in 1..10usize {
+                let mut node = DsuNode::new(i as i32);
+                node.parent = RefCell::new(Some(nodes[i - 1].clone()));
+
+                nodes.push(Rc::new(node));
+            }
+
+            nodes.last().unwrap().compress_path();
+
+            for i in 1..10usize {
+                let parent = nodes[i].parent();
+                assert!(parent.is_some());
+                assert!(Rc::ptr_eq(parent.as_ref().unwrap(), &root));
+            }
+        }
+    }
+
+    mod dsu_root_tests {
+        use super::*;
     }
 }

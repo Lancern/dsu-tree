@@ -1,4 +1,19 @@
-//! This crate provides a non-invasive implementation of a disjoint-set-like tree data structure.
+//! This crate provides a non-invasive implementation of a **disjoint-set tree** data structure.
+//!
+//! # Disjoint-Set Tree
+//!
+//! **[Disjoint sets] data structure**, or **DSU**, or **union-find data structure**, or **merge-
+//! find set**, is a data structure that stores a collection of disjoint sets. It provides
+//! operations for adding new sets, merging sets (equivalent to replacing the sets with the union
+//! of them) and finding the representative member of a set. DSU is very useful in implementing
+//! algorithms like [minimum spanning tree] and more.
+//!
+//! DSU can be implemented with its extreme efficiency by using **disjoint-set trees**.
+//!
+//! TODO: implement crate documentation.
+//!
+//! [Disjoint sets]: https://en.wikipedia.org/wiki/Disjoint-set_data_structure
+//! [minimum spanning tree]: https://en.wikipedia.org/wiki/Minimum_spanning_tree
 //!
 
 #![no_std]
@@ -316,7 +331,7 @@ mod tests {
         }
 
         #[test]
-        fn test_merge_into() {
+        fn test_merge_into_basic() {
             let mut ptr = DsuRoot::new(10);
             let mut root = DsuRoot::new(20);
 
@@ -324,6 +339,30 @@ mod tests {
 
             assert!(DsuRoot::same(&mut ptr, &mut root));
             assert_eq!(*ptr.value(), 20);
+        }
+
+        #[test]
+        fn test_merge_into_root() {
+            let mut ptr = DsuRoot::new(10);
+            let mut root = DsuRoot::new(20);
+
+            ptr.node.set_parent(root.node.clone());
+
+            ptr.merge_into(&mut root);
+
+            assert_eq!(*ptr.value(), 20);
+        }
+
+        #[test]
+        fn test_merge_into_child() {
+            let mut ptr = DsuRoot::new(10);
+            let mut root = DsuRoot::new(20);
+
+            ptr.node.set_parent(root.node.clone());
+
+            root.merge_into(&mut ptr);
+
+            assert_eq!(*root.value(), 20);
         }
 
         #[test]

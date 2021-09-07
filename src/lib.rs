@@ -8,12 +8,41 @@
 //! of them) and finding the representative member of a set. DSU is very useful in implementing
 //! algorithms like [minimum spanning tree] and more.
 //!
-//! DSU can be implemented with its extreme efficiency by using **disjoint-set trees**.
+//! DSU can be implemented with its extreme efficiency by using **disjoint-set trees**. Disjoint-set
+//! trees are actually a forest in which each node represents a set and each tree represents the
+//! union of sets that are merged together. The three DSU operations can be implemented as follows:
+//! - Adding new sets: Easy. Just add new nodes to the forest and it's done. The new nodes are
+//!   themselves a tree in the forest to indicate that they have not been merged with other sets.
+//! - Merging sets: To merge two sets whose corresponding nodes are `A` and `B`, respectively, we
+//!   just change the parent node of `A` to `B` and it's done. In real implementations, some corner
+//!   cases need to be considered, such as merging a set into itself.
+//! - Finding the representative member of a set: Each tree within the disjoint-set trees represents
+//!   a set. The representative member of a set can be chosen to be the representative member of the
+//!   set corresponding to the root node of the tree.
 //!
-//! TODO: implement crate documentation.
+//! # `dsu-tree`
+//!
+//! Rather than implementing a disjoint-set data structure, this crate provides the implementation
+//! of the underlying disjoint-set tree data structure.
+//!
+//! [`DsuRoot`] is provided to access the disjoint-set trees. It is a smart pointer that can be
+//! thought as "always" points to the root node of a tree within the disjoint-set trees.
+//!
+//! To create a new disjoint-set tree node, call the [`DsuRoot::new`] function. To merge two
+//! disjoint-set trees, call the [`DsuRoot::merge_into`] function. To test whether two disjoint-set
+//! trees are actually the same tree, call the [`DsuRoot::same`] function.
+//!
+//! # `#![no_std]`
+//!
+//! This crate is `#![no_std]`.
 //!
 //! [Disjoint sets]: https://en.wikipedia.org/wiki/Disjoint-set_data_structure
 //! [minimum spanning tree]: https://en.wikipedia.org/wiki/Minimum_spanning_tree
+//!
+//! [`DsuRoot`]: struct.DsuRoot.html
+//! [`DsuRoot::new`]: struct.DsuRoot.html#method.new
+//! [`DsuRoot::merge_into`]: struct.DsuRoot.html#method.merge_into
+//! [`DsuRoot::same`]: struct.DsuRoot.html#method.same
 //!
 
 #![no_std]

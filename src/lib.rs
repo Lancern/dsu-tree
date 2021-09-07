@@ -166,10 +166,35 @@ impl<T> DsuNode<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
+
+    fn create_link_tree() -> Vec<Rc<DsuNode<i32>>> {
+        let mut nodes = Vec::with_capacity(10);
+
+        let root = Rc::new(DsuNode::new(0));
+        nodes.push(root.clone());
+
+        for i in 1..10usize {
+            let mut node = DsuNode::new(i as i32);
+            node.parent = RefCell::new(Some(nodes[i - 1].clone()));
+
+            nodes.push(Rc::new(node));
+        }
+
+        nodes
+    }
+
+    fn assert_path_compressed(nodes: &[Rc<DsuNode<i32>>]) {
+        let root = nodes[0].clone();
+        for i in 1..nodes.len() {
+            let parent = nodes[i].parent();
+            assert!(parent.is_some());
+            assert!(Rc::ptr_eq(parent.as_ref().unwrap(), &root));
+        }
+    }
 
     mod dsu_node_tests {
         use super::*;
-        use alloc::vec::Vec;
 
         #[test]
         fn test_new() {
@@ -245,29 +270,75 @@ mod tests {
 
         #[test]
         fn test_compress_path_deep() {
-            let mut nodes = Vec::with_capacity(10);
-
-            let root = Rc::new(DsuNode::new(0));
-            nodes.push(root.clone());
-
-            for i in 1..10usize {
-                let mut node = DsuNode::new(i as i32);
-                node.parent = RefCell::new(Some(nodes[i - 1].clone()));
-
-                nodes.push(Rc::new(node));
-            }
+            let nodes = create_link_tree();
 
             nodes.last().unwrap().compress_path();
 
-            for i in 1..10usize {
-                let parent = nodes[i].parent();
-                assert!(parent.is_some());
-                assert!(Rc::ptr_eq(parent.as_ref().unwrap(), &root));
-            }
+            assert_path_compressed(&nodes);
         }
     }
 
     mod dsu_root_tests {
         use super::*;
+
+        #[test]
+        fn test_new() {
+            let ptr = DsuRoot::new(10);
+
+            assert!(ptr.node.is_root());
+            assert_eq!(ptr.node.value, 10);
+        }
+
+        #[test]
+        fn test_same() {
+            let mut ptr_1 = DsuRoot::new(10);
+            let mut ptr_2 = DsuRoot::new(20);
+
+            assert!(!DsuRoot::same(&mut ptr_1, &mut ptr_2));
+
+            ptr_1.node.set_parent(ptr_2.node.clone());
+
+            assert!(DsuRoot::same(&mut ptr_1, &mut ptr_2));
+        }
+
+        #[test]
+        fn test_value_basic() {
+            let mut ptr = DsuRoot::new(10);
+            assert_eq!(*ptr.value(), 10);
+        }
+
+        #[test]
+        fn test_value_merged() {
+            let mut ptr = DsuRoot::new(10);
+            ptr.node.set_parent(Rc::new(DsuNode::new(20)));
+
+            assert_eq!(*ptr.value(), 20);
+        }
+
+        #[test]
+        fn test_merge_into() {
+            let mut ptr = DsuRoot::new(10);
+            let mut root = DsuRoot::new(20);
+
+            ptr.merge_into(&mut root);
+
+            assert!(DsuRoot::same(&mut ptr, &mut root));
+            assert_eq!(*ptr.value(), 20);
+        }
+
+        #[test]
+        fn test_move_to_root() {
+            let nodes = create_link_tree();
+            let root = nodes[0].clone();
+
+            let mut ptr = DsuRoot {
+                node: nodes.last().unwrap().clone(),
+            };
+            ptr.move_to_root();
+
+            assert!(Rc::ptr_eq(&ptr.node, &root));
+
+            assert_path_compressed(&nodes);
+        }
     }
 }

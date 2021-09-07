@@ -1,5 +1,6 @@
 [package]
 name = "dsu-tree"
+authors = ["Sirui Mu <msrlancern@gmail.com>"]
 version = "0.1.0"
 edition = "2018"
 

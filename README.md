@@ -1,5 +1,10 @@
 # dsu-tree
 
+![version-badge](https://img.shields.io/crates/v/dsu-tree)
+![license-badge](https://img.shields.io/crates/l/dsu-tree)
+![build-status](https://img.shields.io/docsrs/dsu-tree)
+![downloads-badge](https://img.shields.io/crates/dv/dsu-tree)
+
 A non-invasive implementation of a **disjoint-set tree** data structure, written in Rust.
 
 # Disjoint-Set Tree

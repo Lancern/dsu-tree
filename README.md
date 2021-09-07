@@ -15,7 +15,7 @@ DSU can be implemented with its extreme efficiency by using **disjoint-set trees
 
 Rather than implementing a disjoint-set data structure, this crate provides the implementation of the underlying disjoint-set tree data structure.
 
-For the usage of this library, please refer to the documentation.
+For the usage of this library, please refer to the [documentation](https://docs.rs/dsu-tree/0.1.0/dsu-tree).
 
 # License
 

@@ -3,6 +3,12 @@ name = "dsu-tree"
 authors = ["Sirui Mu <msrlancern@gmail.com>"]
 version = "0.1.0"
 edition = "2018"
+license-file = "LICENSE"
+description = "A non-invasive disjoint-set-like data structure implementation"
+homepage = "https://github.com/Lancern/dsu-tree"
+documentation = "https://docs.rs/dsu-tree/0.1.0/dsu-tree"
+repository = "https://github.com/Lancern/dsu-tree"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

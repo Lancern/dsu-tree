@@ -59,9 +59,18 @@ use core::cell::RefCell;
 /// through two `DsuRoot` smart pointers that logically refer to the two trees.
 ///
 /// [`merge_into`]: #method.merge_into
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct DsuRoot<T> {
     node: Rc<DsuNode<T>>,
+}
+
+// DsuRoot<T>: Clone is fine even if T isn't Clone
+impl<T> Clone for DsuRoot<T> {
+    fn clone(&self) -> Self {
+        Self {
+            node: self.node.clone(),
+        }
+    }
 }
 
 impl<T> DsuRoot<T> {
@@ -331,6 +340,16 @@ mod tests {
 
             assert!(ptr.node.is_root());
             assert_eq!(ptr.node.value, 10);
+        }
+
+        #[test]
+        fn test_clone() {
+            struct NonCloneable;
+
+            let mut ptr_1 = DsuRoot::new(NonCloneable);
+            let mut ptr_2 = ptr_1.clone();
+
+            assert!(DsuRoot::same(&mut ptr_1, &mut ptr_2));
         }
 
         #[test]
